@@ -59,6 +59,7 @@ func (server *Server) setupRouter() {
 
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
+	router.POST("/tokens/renew_access", server.renewAccessToken)
 
 	//将路由都换成路由组绑定在一起 组中所有的路由将共享
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
