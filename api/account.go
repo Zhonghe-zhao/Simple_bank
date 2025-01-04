@@ -16,6 +16,7 @@ type CreateAccountRequest struct {
 
 func (server *Server) createAccount(ctx *gin.Context) {
 	var req CreateAccountRequest
+	//解析请求体中的 JSON 并尝试将其映射到 req 变量
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -56,6 +57,11 @@ func (server *Server) getAccount(ctx *gin.Context) {
 
 	account, err := server.store.GetAccount(ctx, req.ID)
 	if err != nil {
+		if err == db.ErrRecordNotFound {
+			// 如果账户没有找到，返回 404 Not Found
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Account not found"})
+			return
+		}
 		//缺少如果没有查到id应该返回 没有找到的消息
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

@@ -43,7 +43,7 @@ func TestGetAccount(t *testing.T) {
 	account1 := createRandomAccount(t)
 	account2, err := testStore.GetAccount(context.Background(), account1.ID)
 
-	require.NoError(t, err)
+	require.NoError(t, err) //省略了if err!= nil的判断 直接用这个包可以判断错误是否为空
 	require.NotEmpty(t, account2)
 
 	require.Equal(t, account1.ID, account2.ID)

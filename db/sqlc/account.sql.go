@@ -49,6 +49,7 @@ type CreateAccountParams struct {
 	Balance  int64  `json:"balance"`
 	Currency string `json:"currency"`
 }
+ 
 
 func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error) {
 	row := q.db.QueryRow(ctx, createAccount, arg.Owner, arg.Balance, arg.Currency)
@@ -62,6 +63,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 	)
 	return i, err
 }
+
 
 const deleteAccount = `-- name: DeleteAccount :exec
 DELETE FROM accounts

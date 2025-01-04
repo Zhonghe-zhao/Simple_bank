@@ -78,6 +78,7 @@ func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
 }
 
+// 为什么要有Start 因为router无法导出到别的地方使用 所以封装一个可导出的Start方法
 func (server *Server) Start(address string) error {
 	return server.router.Run(address)
 }

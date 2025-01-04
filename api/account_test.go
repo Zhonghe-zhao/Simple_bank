@@ -395,6 +395,7 @@ func TestListAccountsAPI(t *testing.T) {
 		tc := testCases[i]
 
 		t.Run(tc.name, func(t *testing.T) {
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
