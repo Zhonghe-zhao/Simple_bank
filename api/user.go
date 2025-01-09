@@ -66,9 +66,10 @@ func (server *Server) createUser(ctx *gin.Context) {
 		errCode := db.ErrorCode(err)
 		//此处只保留一个外键约束
 		if errCode == db.UniqueViolation {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
 			return
 		}
-		ctx.JSON(http.StatusForbidden, errorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
