@@ -141,5 +141,5 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 
 	// 比较时间字段
 	require.Equal(t, user.PasswordChangedAt, gotUser.PasswordChangedAt)
-	require.Equal(t, user.CreateAt, gotUser.CreateAt)
+	require.Equal(t, user.CreatedAt, gotUser.CreatedAt)
 }
