@@ -7,7 +7,7 @@ import (
 
 // ExecTx executes a function within a database transaction
 func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
-	//tx是事务对象，用来与数据库交互
+	//tx是sqlx的Tx对象，用来与数据库交互
 	tx, err := store.connPool.Begin(ctx)
 	if err != nil {
 		return err

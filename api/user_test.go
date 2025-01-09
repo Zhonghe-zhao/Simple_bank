@@ -138,4 +138,8 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	require.Equal(t, user.FullName, gotUser.FullName)
 	require.Equal(t, user.Email, gotUser.Email)
 	require.Empty(t, gotUser.HashedPassword)
+
+	// 比较时间字段
+	require.Equal(t, user.PasswordChangedAt, gotUser.PasswordChangedAt)
+	require.Equal(t, user.CreateAt, gotUser.CreateAt)
 }
