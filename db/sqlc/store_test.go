@@ -29,18 +29,8 @@ func TestTransferTx(t *testing.T) {
 				ToAccountID:   account2.ID,
 				Amount:        amount,
 			})
-
-			// // 打印出错误日志
-			// if err != nil {
-			// 	fmt.Printf("Transaction %d failed with error: %v\n", i, err)
-			// } else {
-			// 	fmt.Printf("Transaction %d succeeded, result: %+v\n", i, result)
-			// }
-
 			errs <- err
-			//require.NoError(t, err, "transfer transaction failed: %v", err)
 			results <- result
-			//require.NotEmpty(t, result, "transfer transaction result is empty")
 		}(i)
 	}
 

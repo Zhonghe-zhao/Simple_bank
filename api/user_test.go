@@ -67,10 +67,9 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateUserParams{
-					Username:       user.Username,
-					FullName:       user.FullName,
-					Email:          user.Email,
-					HashedPassword: user.HashedPassword,
+					Username: user.Username,
+					FullName: user.FullName,
+					Email:    user.Email,
 				}
 				store.EXPECT().
 					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).

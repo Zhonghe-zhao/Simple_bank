@@ -102,7 +102,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	user, err := server.store.GetUser(ctx, req.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			ctx.JSON(http.StatusNotFound, errorResponse(errors.New("用户名错误请重新尝试")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -111,7 +111,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	err = util.CheckPassword(req.Password, user.HashedPassword)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("密码错误请重新尝试")))
 		return
 	}
 
