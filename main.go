@@ -37,7 +37,7 @@ func main() {
 func runGrpcServer(config util.Config, store db.Store) {
 	server, err := gapi.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot create gRPCserver %v", err)
+		log.Fatalf("cannot create gRPCserver %v", err)
 	}
 	//创建gRPC服务器实例
 	grpcServer := grpc.NewServer()
