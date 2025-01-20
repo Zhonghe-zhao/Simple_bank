@@ -92,9 +92,9 @@ func runGrpGatewayServer(config util.Config, store db.Store) error {
 	}
 	// Start HTTP server (and proxy calls to gRPC server endpoint)
 	// 创建 HTTP 监听器
-	listener, err := net.Listen("tcp", ":8081")
+	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
-		log.Fatalf("Failed to create listener on port 8081: %v", err)
+		log.Fatalf("Failed to create listener on port 8080: %v", err)
 	}
 
 	// 输出启动信息

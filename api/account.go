@@ -68,7 +68,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 	}
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if account.Owner != authPayload.Username {
-		err := errors.New("账户不属于认证的账户")
+		err := errors.New("账户不属于认证的用户")
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
