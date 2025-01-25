@@ -11,13 +11,15 @@ import (
 	"project/simplebank/util"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rakyll/statik/fs"
 
 	api "project/simplebank/api"
 	db "project/simplebank/db/sqlc"
 
+	_ "project/simplebank/doc/statik"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -42,10 +44,7 @@ func main() {
 	//运行gin框架
 	//RunGinServer(config, store)
 	go func() {
-		if err := runGrpGatewayServer(config, store); err != nil {
-			log.Fatal(err)
-		}
-
+		runGrpGatewayServer(config, store)
 	}()
 
 	if err := runGrpcServer(config, store); err != nil {
@@ -79,28 +78,46 @@ func runGrpcServer(config util.Config, store db.Store) error {
 	return grpcServer.Serve(listener)
 }
 
-func runGrpGatewayServer(config util.Config, store db.Store) error {
-
+func runGrpGatewayServer(
+	//ctx context.Context,
+	config util.Config,
+	store db.Store,
+) {
+	server, err := gapi.NewServer(config, store)
+	if err != nil {
+		log.Fatalf("cannot create server: %v", err)
+	}
+	grpcmux := runtime.NewServeMux()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	grpcmux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-
-	err := pb.RegisterSimplebankHandlerFromEndpoint(ctx, grpcmux, *grpcServerEndpoint, opts)
+	err = pb.RegisterSimplebankHandlerServer(ctx, grpcmux, server)
 	if err != nil {
-		log.Fatalf("cannot register handler from endpoint: %v", err)
+		log.Fatalf("cannot register handler server: %v", err)
 	}
-	// Start HTTP server (and proxy calls to gRPC server endpoint)
-	// 创建 HTTP 监听器
-	listener, err := net.Listen("tcp", ":8080")
+
+	mux := http.NewServeMux()
+	mux.Handle("/", grpcmux)
+
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatalf("cannot create statik fs: %v", err)
+	}
+
+	swaggerHandler := http.StripPrefix("/swagger/", http.FileServer(statikFS))
+	mux.Handle("/swagger/", swaggerHandler)
+
+	listener, err := net.Listen("tcp", config.HTTPServerAddress)
 	if err != nil {
 		log.Fatalf("Failed to create listener on port 8080: %v", err)
 	}
 
 	// 输出启动信息
 	log.Printf("Starting gRPC Gateway server at %s", listener.Addr().String())
+	err = http.Serve(listener, mux)
+	if err != nil {
+		log.Fatalf("Failed to start HTTP server: %v", err)
+	}
 
-	return http.Serve(listener, grpcmux)
 }
 
 func RunGinServer(config util.Config, store db.Store) {
