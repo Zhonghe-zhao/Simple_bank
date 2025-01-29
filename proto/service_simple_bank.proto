@@ -13,7 +13,7 @@ option go_package = "project/simplebank/pb";
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
     title: "Simple Bank API"
-    version: "1.0"
+    version: "1.1"
     contact: {
       name: "Zhaozhonghe"
       url: "https://github.com/Whuichenggong"
@@ -28,11 +28,20 @@ service Simplebank {
             post: "/v1/create_users"
             body: "*"
     };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "User this API to create a new user"
+      summary: "Create a new user"
+};
 }
     rpc LoginUser (LoginUserRequest) returns (LoginUserResponse) {
         option (google.api.http) = {
             post: "/v1/login_users"
             body: "*"
         };
+        ;
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "User this API to login a user and get a token & refresh token"
+      summary: "Login a user"
+};
     }
 }
