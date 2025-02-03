@@ -46,7 +46,7 @@ func ValidateEmail(value string) error {
 	return nil
 }
 
-func ValidateFullname(value string) error {
+func ValidateFullName(value string) error {
 	if err := ValidateString(value, 3, 100); err != nil {
 		return err
 	}
