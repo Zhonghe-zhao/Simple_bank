@@ -50,8 +50,8 @@ func ValidateFullname(value string) error {
 	if err := ValidateString(value, 3, 100); err != nil {
 		return err
 	}
-	if !isValidUsername(value) {
-		return fmt.Errorf("must contain only letters,digits, or underscore")
+	if !isValidFullname(value) {
+		return fmt.Errorf("must contain only lowercase letters,digits, or spaces")
 	}
 	return nil
 }
