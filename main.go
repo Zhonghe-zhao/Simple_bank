@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"net"
 	"net/http"
 	"project/simplebank/gapi"
 	"project/simplebank/pb"
 	"project/simplebank/util"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rakyll/statik/fs"
@@ -32,12 +33,12 @@ var (
 func main() {
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		log.Fatal("cannot load config:", err)
+		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
 	connPool, err := pgxpool.New(context.Background(), config.DB_SOURCE)
 	if err != nil {
-		log.Fatal("cannot connect to db:", err)
+		log.Fatal().Err(err).Msg("cannot connect to db")
 	}
 	//初始化数据库服务
 	store := db.NewStore(connPool)
@@ -46,20 +47,17 @@ func main() {
 	go func() {
 		runGrpGatewayServer(config, store)
 	}()
-
-	if err := runGrpcServer(config, store); err != nil {
-		log.Fatalf("Failed to start gRPC server: %v", err)
-	}
-
+	runGrpcServer(config, store)
 }
 
-func runGrpcServer(config util.Config, store db.Store) error {
+func runGrpcServer(config util.Config, store db.Store) {
 	server, err := gapi.NewServer(config, store)
 	if err != nil {
-		log.Fatalf("cannot create gRPCserver %v", err)
+		log.Fatal().Err(err).Msg("failed to run gRPC server")
 	}
 	//创建gRPC服务器实例
-	grpcServer := grpc.NewServer()
+	gprcLogger := grpc.UnaryInterceptor(gapi.GrpcLogger)
+	grpcServer := grpc.NewServer(gprcLogger)
 	//注册服务
 	pb.RegisterSimplebankServer(grpcServer, server)
 	//注册反射服务
@@ -67,7 +65,7 @@ func runGrpcServer(config util.Config, store db.Store) error {
 	//创建监听器
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)
 	if err != nil {
-		log.Fatal("cannot create Listener")
+		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 	//启动gRPC服务器
 	log.Printf("start gRPC server at %s", listener.Addr().String())
@@ -75,7 +73,7 @@ func runGrpcServer(config util.Config, store db.Store) error {
 	// if err != nil {
 	// 	log.Fatal("cannot start gRPC server")
 	// }
-	return grpcServer.Serve(listener)
+	grpcServer.Serve(listener)
 }
 
 func runGrpGatewayServer(
@@ -85,14 +83,14 @@ func runGrpGatewayServer(
 ) {
 	server, err := gapi.NewServer(config, store)
 	if err != nil {
-		log.Fatalf("cannot create server: %v", err)
+		log.Fatal().Err(err).Msg("cannot create server")
 	}
 	grpcmux := runtime.NewServeMux()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	err = pb.RegisterSimplebankHandlerServer(ctx, grpcmux, server)
 	if err != nil {
-		log.Fatalf("cannot register handler server: %v", err)
+		log.Fatal().Err(err).Msg("cannot register handler server")
 	}
 
 	mux := http.NewServeMux()
@@ -100,7 +98,7 @@ func runGrpGatewayServer(
 
 	statikFS, err := fs.New()
 	if err != nil {
-		log.Fatalf("cannot create statik fs: %v", err)
+		log.Fatal().Err(err).Msg("cannot create statik fs")
 	}
 
 	swaggerHandler := http.StripPrefix("/swagger/", http.FileServer(statikFS))
@@ -108,14 +106,14 @@ func runGrpGatewayServer(
 
 	listener, err := net.Listen("tcp", config.HTTPServerAddress)
 	if err != nil {
-		log.Fatalf("Failed to create listener on port 8080: %v", err)
+		log.Fatal().Err(err).Msg("failed to listen")
 	}
 
 	// 输出启动信息
 	log.Printf("Starting gRPC Gateway server at %s", listener.Addr().String())
 	err = http.Serve(listener, mux)
 	if err != nil {
-		log.Fatalf("Failed to start HTTP server: %v", err)
+		log.Fatal().Err(err).Msg("cannot start server")
 	}
 
 }
@@ -123,10 +121,10 @@ func runGrpGatewayServer(
 func RunGinServer(config util.Config, store db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
-		log.Fatalf("cannot create ginserver: %v", err)
+		log.Fatal().Err(err).Msg("cannot create server")
 	}
 	err = server.Start(config.HTTPServerAddress)
 	if err != nil {
-		log.Fatalf("cannot start server: %v", err)
+		log.Fatal().Err(err).Msg("cannot start server")
 	}
 }
