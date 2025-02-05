@@ -5,10 +5,13 @@ import (
 	"flag"
 	"net"
 	"net/http"
+	"os"
 	"project/simplebank/gapi"
 	"project/simplebank/pb"
 	"project/simplebank/util"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -18,6 +21,9 @@ import (
 	db "project/simplebank/db/sqlc"
 
 	_ "project/simplebank/doc/statik"
+
+	_ "github.com/golang-migrate/migrate/v4/database/postgres" // 导入 postgres 驱动
+	_ "github.com/golang-migrate/migrate/v4/source/file"       // 导入 file 驱动
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
@@ -36,10 +42,17 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
-	connPool, err := pgxpool.New(context.Background(), config.DB_SOURCE)
+	if config.Environment == "development" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+
+	connPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot connect to db")
 	}
+
+	runDBMigration(config.MigrationURL, config.DBSource)
+
 	//初始化数据库服务
 	store := db.NewStore(connPool)
 	//运行gin框架
@@ -68,7 +81,7 @@ func runGrpcServer(config util.Config, store db.Store) {
 		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 	//启动gRPC服务器
-	log.Printf("start gRPC server at %s", listener.Addr().String())
+	log.Info().Msgf("start gRPC server at %s", listener.Addr().String())
 	// err = grpcServer.Serve(listener)
 	// if err != nil {
 	// 	log.Fatal("cannot start gRPC server")
@@ -110,8 +123,10 @@ func runGrpGatewayServer(
 	}
 
 	// 输出启动信息
-	log.Printf("Starting gRPC Gateway server at %s", listener.Addr().String())
-	err = http.Serve(listener, mux)
+	log.Info().Msgf("Starting gRPC Gateway server at %s", listener.Addr().String())
+	handle := gapi.HttpLogger(mux)
+
+	err = http.Serve(listener, handle)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start server")
 	}
@@ -127,4 +142,17 @@ func RunGinServer(config util.Config, store db.Store) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start server")
 	}
+}
+
+func runDBMigration(migrationURL string, dbSource string) {
+	migration, err := migrate.New(migrationURL, dbSource)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot create new migrate instance")
+	}
+
+	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal().Err(err).Msg("failed to run migrate up")
+	}
+
+	log.Info().Msg("db migrated successfully")
 }
