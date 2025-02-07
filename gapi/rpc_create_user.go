@@ -6,7 +6,10 @@ import (
 	"project/simplebank/pb"
 	"project/simplebank/util"
 	"project/simplebank/val"
+	"project/simplebank/worker"
+	"time"
 
+	"github.com/hibiken/asynq"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,6 +41,20 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to create user: %s", err)
 
+	}
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Username: req.GetUsername(),
+	}
+	//重试次数为10 延迟处理
+	options := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.ProcessIn(time.Second * 5),
+		asynq.Queue(worker.QueueCritical),
+	}
+
+	err = server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, options...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to distribute task to send verify email: %s", err)
 	}
 	rsp := &pb.CreateUserResponse{
 		User: convertUser(user),

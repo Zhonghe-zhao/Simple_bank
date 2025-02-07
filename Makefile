@@ -12,6 +12,9 @@ createdb:
 dropdb:
 	 docker exec -it postgres12 dropdb  simple_bank
 
+redis:
+	docker run --name redis -p 6379:6379 -d redis:7-alpine
+
 migrateup:
 	migrate -path ./db/migration -database "$(DB_URL)" -verbose up
 
@@ -55,4 +58,4 @@ proto:
 evans:
 	evans --host localhost --port 9090 -r repl
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1 db_docs db_schema proto
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1 db_docs db_schema proto redis

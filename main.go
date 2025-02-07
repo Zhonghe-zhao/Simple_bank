@@ -9,8 +9,10 @@ import (
 	"project/simplebank/gapi"
 	"project/simplebank/pb"
 	"project/simplebank/util"
+	"project/simplebank/worker"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -55,16 +57,33 @@ func main() {
 
 	//初始化数据库服务
 	store := db.NewStore(connPool)
+
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+
 	//运行gin框架
 	//RunGinServer(config, store)
+	go runTaskProcessor(redisOpt, store)
 	go func() {
-		runGrpGatewayServer(config, store)
+		runGrpGatewayServer(config, store, taskDistributor)
 	}()
-	runGrpcServer(config, store)
+	runGrpcServer(config, store, taskDistributor)
 }
 
-func runGrpcServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+	log.Info().Msg("start task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
+}
+
+func runGrpcServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to run gRPC server")
 	}
@@ -93,8 +112,9 @@ func runGrpGatewayServer(
 	//ctx context.Context,
 	config util.Config,
 	store db.Store,
+	taskDistributor worker.TaskDistributor,
 ) {
-	server, err := gapi.NewServer(config, store)
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server")
 	}
