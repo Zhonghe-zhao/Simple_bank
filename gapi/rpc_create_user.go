@@ -25,13 +25,29 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
-	arg := db.CreateUserParams{
-		Username:       req.GetUsername(),
-		FullName:       req.GetFullName(),
-		Email:          req.GetEmail(),
-		HashedPassword: hashedPassword,
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:       req.GetUsername(),
+			FullName:       req.GetFullName(),
+			Email:          req.GetEmail(),
+			HashedPassword: hashedPassword,
+		},
+		AfterCreate: func(user db.User) error {
+			taskPayload := &worker.PayloadSendVerifyEmail{
+				Username: req.GetUsername(),
+			}
+			//重试次数为10 延迟处理
+			options := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.ProcessIn(time.Second * 5),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			return server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, options...)
+
+		},
 	}
-	user, err := server.store.CreateUser(ctx, arg)
+	TxResult, err := server.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		errCode := db.ErrorCode(err)
 		//此处只保留一个外键约束
@@ -42,22 +58,9 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Errorf(codes.Internal, "failed to create user: %s", err)
 
 	}
-	taskPayload := &worker.PayloadSendVerifyEmail{
-		Username: req.GetUsername(),
-	}
-	//重试次数为10 延迟处理
-	options := []asynq.Option{
-		asynq.MaxRetry(10),
-		asynq.ProcessIn(time.Second * 5),
-		asynq.Queue(worker.QueueCritical),
-	}
 
-	err = server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, options...)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to distribute task to send verify email: %s", err)
-	}
 	rsp := &pb.CreateUserResponse{
-		User: convertUser(user),
+		User: convertUser(TxResult.User),
 	}
 
 	return rsp, nil
