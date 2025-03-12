@@ -40,5 +40,5 @@ func (logger *Logger) Error(args ...interface{}) {
 // Fatal logs a message at Fatal level
 // and process will exit with status set to 1.
 func (logger *Logger) Fatal(args ...interface{}) {
-	log.Fatal().Msg(fmt.Sprint(args...))
+	log.Print(zerolog.FatalLevel, fmt.Sprint(args...))
 }
