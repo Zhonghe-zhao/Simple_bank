@@ -27,11 +27,14 @@ migrateup1:
 migratedown1:
 	migrate -path ./db/migration -database "$(DB_URL)" -verbose down 1
 
+new_migration:
+	migrate create -ext sql -dir db/migration -seq $(name)
+
 sqlc:
 	sqlc generate
 
 test:
-	go test -v -cover 
+	go test -v -cover -short ./...
 	
 server:
 	go run main.go
@@ -58,4 +61,4 @@ proto:
 evans:
 	evans --host localhost --port 9090 -r repl
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1 db_docs db_schema proto redis
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server mock migrateup1 migratedown1 db_docs db_schema proto redis new_migration evans
