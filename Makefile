@@ -40,7 +40,8 @@ server:
 	go run main.go
 
 mock:
-	mockgen -destination db/mock/store.go project/simplebank/db/sqlc Store 
+	mockgen -destination db/mock/store.go project/simplebank/db/sqlc Store
+	mockgen -package mockwk -destination worker/mock/distributor.go project/simplebank/worker TaskDistributor 
 
 db_docs:
 	dbdocs build doc/db.dbml
@@ -49,14 +50,14 @@ db_schema:
 	dbml2sql --postgres -o doc/schema.sql doc/db.dbml
 
 proto:
-	del /Q pb\*.go\
-	del /Q doc\swagger\*.swagger.json
+	rm -f pb/*.go
+	rm -f doc/swagger/*.swagger.json
 	protoc --proto_path=proto --go_out=pb --go_opt=paths=source_relative \
-    --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+	--go-grpc_out=pb --go-grpc_opt=paths=source_relative \
 	--grpc-gateway_out=pb --grpc-gateway_opt=paths=source_relative \
 	--openapiv2_out=doc/swagger --openapiv2_opt=allow_merge=true,merge_file_name=simple_bank \
-    proto/*.proto
-	statik -src=./doc/swagger -dest=./doc -f
+	proto/*.proto
+	statik -src=./doc/swagger -dest=./doc
 
 evans:
 	evans --host localhost --port 9090 -r repl

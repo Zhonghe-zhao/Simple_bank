@@ -93,7 +93,7 @@ func runGrpcServer(config util.Config, store db.Store, taskDistributor worker.Ta
 	gprcLogger := grpc.UnaryInterceptor(gapi.GrpcLogger)
 	grpcServer := grpc.NewServer(gprcLogger)
 	//注册服务
-	pb.RegisterSimplebankServer(grpcServer, server)
+	pb.RegisterSimpleBankServer(grpcServer, server)
 	//注册反射服务
 	reflection.Register(grpcServer)
 	//创建监听器
@@ -123,7 +123,7 @@ func runGrpGatewayServer(
 	grpcmux := runtime.NewServeMux()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = pb.RegisterSimplebankHandlerServer(ctx, grpcmux, server)
+	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcmux, server)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot register handler server")
 	}

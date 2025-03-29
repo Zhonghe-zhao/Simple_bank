@@ -12,10 +12,11 @@ FROM alpine:3.20
 WORKDIR /app
 COPY --from=build /app/main .
 COPY --from=build /app/migrate /app/migrate
+COPY --from=build /app/db/migration ./db/migration
 COPY app.env .
 COPY start.sh . 
 COPY wait-for.sh . 
-COPY db/migration ./migration
+COPY db/migration ./db/migration
 
 EXPOSE 8080 
 CMD [ "/app/main" ]

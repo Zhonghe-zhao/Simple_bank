@@ -41,6 +41,18 @@ func (server *Server) authorizeUser(ctx context.Context, accessibleRoles []strin
 	if err != nil {
 		return nil, fmt.Errorf("invalid access token: %s", err)
 	}
+	if !hasPermission(payload.Role, accessibleRoles) {
+		return nil, fmt.Errorf("unauthorized access")
+	}
 
 	return payload, nil
+}
+
+func hasPermission(userRole string, accessibleRoles []string) bool {
+	for _, role := range accessibleRoles {
+		if userRole == role {
+			return true
+		}
+	}
+	return false
 }

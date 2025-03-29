@@ -9,18 +9,19 @@ import (
 	"project/simplebank/worker"
 )
 
+// Server serves gRPC requests for our banking service.
 type Server struct {
-	pb.UnimplementedSimplebankServer
+	pb.UnimplementedSimpleBankServer
 	config          util.Config
 	store           db.Store
 	tokenMaker      token.Maker
 	taskDistributor worker.TaskDistributor
 }
 
+// NewServer creates a new gRPC server.
 func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
-		fmt.Printf("Key length in bytes: %d\n", len([]byte(config.TokenSymmetricKey)))
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
 

@@ -4,8 +4,8 @@ import "context"
 
 // TransferTxParams contains the input parameters of the transfer transaction
 type CreateUserTxParams struct {
-	CreateUserParams
-	AfterCreate func(user User) error
+	CreateUserParams //匿名嵌套
+	AfterCreate      func(user User) error
 }
 
 // CreateUserTxResult is the result of the transfer transaction
